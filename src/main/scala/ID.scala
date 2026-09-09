@@ -20,6 +20,10 @@ class InstructionDecode extends MultiIOModule {
     new Bundle {
       //added input to id for
       val instruction = Input(new Instruction)
+      // +
+      val writeEnable = Input(Bool())
+      val writeAddress = Input(UInt(5.W))
+      val writeData = Input(UInt(32.W))
 
 
       // added outputs for alu
@@ -56,9 +60,13 @@ class InstructionDecode extends MultiIOModule {
   registers.io.readAddress1 := io.instruction.registerRs1
   registers.io.readAddress2 := io.instruction.registerRs2
 
-  registers.io.writeEnable  := false.B
-  registers.io.writeAddress := 0.U
-  registers.io.writeData    := 0.U
+  //registers.io.writeEnable  := false.B
+  //registers.io.writeAddress := 0.U
+  //registers.io.writeData    := 0.U
+  // + 
+  registers.io.writeEnable := io.writeEnable
+  registers.io.writeAddress := io.writeAddress
+  registers.io.writeData := io.writeData
 
   //decoder.instruction := 0.U.asTypeOf(new Instruction)
   // added 

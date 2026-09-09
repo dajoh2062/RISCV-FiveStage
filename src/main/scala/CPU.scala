@@ -85,7 +85,13 @@ class CPU extends MultiIOModule {
     EX.io.controlSignals := IDBarrier.controlSignalsOut
 
 
-   
+    MEM.io.aluResult := EX.io.aluResult
+    MEM.io.rd := EX.io.rdOut
+    MEM.io.controlSignals := EX.io.controlSignalsOut
+
+    ID.io.writeEnable := MEM.io.controlSignalsOut.regWrite
+    ID.io.writeAddress := MEM.io.rdOut
+    ID.io.writeData := MEM.io.aluResultOut
 
     
 }
