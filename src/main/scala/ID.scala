@@ -74,4 +74,17 @@ class InstructionDecode extends MultiIOModule {
   io.op1Select := decoder.op1Select
   io.op2Select := decoder.op2Select
   io.ALUop := decoder.ALUop
+  when(!testHarness.registerSetup.setup) {
+  printf(
+    "ID: instr=%x rs1=%d rs2=%d rd=%d imm=%d regWrite=%d op2=%d alu=%d\n",
+    io.instruction.instruction,
+    io.instruction.registerRs1,
+    io.instruction.registerRs2,
+    io.instruction.registerRd,
+    io.immediate,
+    io.controlSignals.regWrite,
+    io.op2Select,
+    io.ALUop
+  )
+}
 }

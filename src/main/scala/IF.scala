@@ -55,6 +55,9 @@ class InstructionFetch extends MultiIOModule {
   instruction := IMEM.io.instruction.asTypeOf(new Instruction)
   // added to expose instruction from IF
   io.instruction := instruction
+  when(!testHarness.IMEMsetup.setup) {
+  printf("IF: PC=%x instr=%x\n", PC, instruction.instruction)
+}
 
 
 

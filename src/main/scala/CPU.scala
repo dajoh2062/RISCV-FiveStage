@@ -32,6 +32,12 @@ class CPU extends MultiIOModule {
   val MEM = Module(new MemoryFetch)
   // val WB  = Module(new Execute) (You may not need this one?)
 
+  val IFBarrier = Module(new IFBarrier).io
+
+  val EX = Module(new Execute)
+  
+  val IDBarrier = Module(new IDBarrier).io
+
 
   /**
     * Setup. You should not change this code
@@ -56,7 +62,30 @@ class CPU extends MultiIOModule {
     */
 
     // connect ID to IF
-    ID.io.instruction := IF.io.instruction
+    IFBarrier.PCIn := IF.io.PC
+    IFBarrier.instructionIn := IF.io.instruction
+
+    ID.io.instruction := IFBarrier.instructionOut
+
+
+    IDBarrier.readData1In := ID.io.readData1
+    IDBarrier.readData2In := ID.io.readData2
+    IDBarrier.immediateIn := ID.io.immediate
+    IDBarrier.op2SelectIn := ID.io.op2Select
+    IDBarrier.ALUopIn := ID.io.ALUop
+    IDBarrier.rdIn := ID.io.rd
+    IDBarrier.controlSignalsIn := ID.io.controlSignals
+
+    EX.io.readData1 := IDBarrier.readData1Out
+    EX.io.readData2 := IDBarrier.readData2Out
+    EX.io.immediate := IDBarrier.immediateOut
+    EX.io.op2Select := IDBarrier.op2SelectOut
+    EX.io.ALUop := IDBarrier.ALUopOut
+    EX.io.rd := IDBarrier.rdOut
+    EX.io.controlSignals := IDBarrier.controlSignalsOut
+
+
+   
 
     
 }
