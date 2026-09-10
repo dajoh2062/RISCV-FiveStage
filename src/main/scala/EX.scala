@@ -10,11 +10,23 @@ class ALU extends Module {
     val aluOp = Input(UInt(4.W))
 
     val aluResult = Output(UInt(32.W))
+
   })
 
   val ALUopMap = Array(
     ALUOps.ADD -> (io.op1 + io.op2),
-    ALUOps.SUB -> (io.op1 - io.op2)
+    ALUOps.SUB -> (io.op1 - io.op2),
+
+    ALUOps.SLT  -> (io.op1.asSInt < io.op2.asSInt).asUInt,
+    ALUOps.SLTU -> (io.op1 < io.op2).asUInt,
+
+    ALUOps.SLL -> (io.op1 << io.op2(4, 0)),
+    ALUOps.SRL -> (io.op1 >> io.op2(4, 0)),
+    ALUOps.SRA -> (io.op1.asSInt >> io.op2(4, 0)).asUInt,   
+
+    ALUOps.AND ->(io.op1 & io.op2),
+    ALUOps.OR  ->(io.op1 | io.op2), 
+    ALUOps.XOR ->(io.op1 ^ io.op2)
   )
   
   // MuxLookup API: https://github.com/freechipsproject/chisel3/wiki/Muxes-and-Input-Selection#muxlookup
@@ -36,6 +48,7 @@ class Execute extends Module{
         val aluResult = Output(UInt(32.W))
         val rdOut = Output(UInt(5.W))
         val controlSignalsOut = Output(new ControlSignals)
+        val storeData = Output(UInt(32.W))
     })
 
     val ALU = Module(new ALU)
@@ -53,6 +66,7 @@ class Execute extends Module{
     io.aluResult := ALU.io.aluResult
     io.rdOut := io.rd
     io.controlSignalsOut := io.controlSignals
+    io.storeData := io.readData2
 
 
     printf(

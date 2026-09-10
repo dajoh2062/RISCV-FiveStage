@@ -21,8 +21,10 @@ class MemoryFetch() extends MultiIOModule {
     val aluResult = Input(UInt(32.W))
     val rd = Input(UInt(5.W))
     val controlSignals = Input(new ControlSignals)
+    val storeData = Input(UInt(32.W))
 
     val aluResultOut = Output(UInt(32.W))
+    val memoryDataOut = Output(UInt(32.W))
     val rdOut = Output(UInt(5.W))
     val controlSignalsOut = Output(new ControlSignals)
       
@@ -43,13 +45,29 @@ class MemoryFetch() extends MultiIOModule {
   /**
     * Your code here.
     */
-  DMEM.io.dataIn      := 0.U
-  DMEM.io.dataAddress := 0.U
-  DMEM.io.writeEnable := false.B
+  //DMEM.io.dataIn      := 0.U
+  DMEM.io.dataAddress := io.aluResult
+  //DMEM.io.writeEnable := false.B
+  DMEM.io.dataIn := io.storeData
+  DMEM.io.writeEnable := io.controlSignals.memWrite
 
-  io.aluResultOut := io.aluResult
-  io.rdOut := io.rd
-  io.controlSignalsOut := io.controlSignals
+  //io.aluResultOut := io.aluResult
+  //io.rdOut := io.rd
+  //io.controlSignalsOut := io.controlSignals
+  io.memoryDataOut := DMEM.io.dataOut
+
+  val aluResultRegister = RegInit(0.U(32.W))
+  val rdRegister = RegInit(0.U(5.W))
+  val controlSignalsRegister = RegInit(0.U.asTypeOf(new ControlSignals))
+
+  aluResultRegister := io.aluResult
+  rdRegister := io.rd
+  controlSignalsRegister := io.controlSignals
+
+  io.aluResultOut := aluResultRegister
+  io.rdOut := rdRegister
+  io.controlSignalsOut := controlSignalsRegister
+
 
   printf(
     "MEM: aluResult=%d rd=%d regWrite=%d\n",

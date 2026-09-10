@@ -38,6 +38,8 @@ class CPU extends MultiIOModule {
   
   val IDBarrier = Module(new IDBarrier).io
 
+  val WB = Module(new WriteBack)
+
 
   /**
     * Setup. You should not change this code
@@ -88,10 +90,18 @@ class CPU extends MultiIOModule {
     MEM.io.aluResult := EX.io.aluResult
     MEM.io.rd := EX.io.rdOut
     MEM.io.controlSignals := EX.io.controlSignalsOut
+    MEM.io.storeData := EX.io.storeData
 
-    ID.io.writeEnable := MEM.io.controlSignalsOut.regWrite
-    ID.io.writeAddress := MEM.io.rdOut
-    ID.io.writeData := MEM.io.aluResultOut
+    WB.io.aluResult := MEM.io.aluResultOut
+    WB.io.rd := MEM.io.rdOut
+    WB.io.regWrite := MEM.io.controlSignalsOut.regWrite
+
+    WB.io.memoryData := MEM.io.memoryDataOut
+    WB.io.memRead := MEM.io.controlSignalsOut.memRead
+
+    ID.io.writeData := WB.io.writeData
+    ID.io.writeAddress := WB.io.writeAddress
+    ID.io.writeEnable := WB.io.writeEnable
 
     
 }

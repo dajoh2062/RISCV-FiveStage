@@ -76,7 +76,11 @@ class InstructionDecode extends MultiIOModule {
   io.readData1 := registers.io.readData1
   io.readData2 := registers.io.readData2
   io.rd := io.instruction.registerRd
-  io.immediate := io.instruction.immediateIType
+  io.immediate := Mux(
+    decoder.immType === ImmFormat.STYPE,
+    io.instruction.immediateSType,
+    io.instruction.immediateIType
+  )
 
   io.controlSignals := decoder.controlSignals
   io.op1Select := decoder.op1Select
