@@ -24,7 +24,8 @@ object Manifest {
   //val singleTest = "arith.s"
   //val singleTest = "forward1.s"
   //val singleTest = "forward2.s"
-  val singleTest = "load2.s"
+  //val singleTest = "load2.s"
+  val singleTest = "single.s"
 
   val nopPadded = true
 

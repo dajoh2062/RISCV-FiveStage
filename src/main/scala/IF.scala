@@ -26,6 +26,9 @@ class InstructionFetch extends MultiIOModule {
       val PC = Output(UInt())
       // added to include instruction in output
       val instruction = Output(new Instruction)
+
+      val redirect = Input(Bool())
+      val targetPC = Input(UInt(32.W))
     })
 
   val IMEM = Module(new IMEM)
@@ -48,7 +51,7 @@ class InstructionFetch extends MultiIOModule {
   IMEM.io.instructionAddress := PC
 
   // PC := PC + 4.U
-  PC := PC + 4.U
+  PC := Mux(io.redirect, io.targetPC, PC + 4.U)
 
 
   val instruction = Wire(new Instruction)

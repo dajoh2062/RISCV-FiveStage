@@ -36,6 +36,8 @@ class InstructionDecode extends MultiIOModule {
       val op1Select = Output(UInt(1.W))
       val op2Select = Output(UInt(1.W))
       val ALUop = Output(UInt(4.W))
+
+      val branchType = Output(UInt(3.W))
       }
   )
 
@@ -76,16 +78,25 @@ class InstructionDecode extends MultiIOModule {
   io.readData1 := registers.io.readData1
   io.readData2 := registers.io.readData2
   io.rd := io.instruction.registerRd
-  io.immediate := Mux(
-    decoder.immType === ImmFormat.STYPE,
-    io.instruction.immediateSType,
-    io.instruction.immediateIType
+  io.immediate := MuxCase(
+    io.instruction.immediateIType,
+    Seq(
+      (decoder.immType === ImmFormat.STYPE) ->
+        io.instruction.immediateSType,
+      (decoder.immType === ImmFormat.UTYPE) ->
+        io.instruction.immediateUType,
+      (decoder.immType === ImmFormat.BTYPE) ->
+        io.instruction.immediateBType,
+      (decoder.immType === ImmFormat.JTYPE) ->
+        io.instruction.immediateJType
+    )
   )
 
   io.controlSignals := decoder.controlSignals
   io.op1Select := decoder.op1Select
   io.op2Select := decoder.op2Select
   io.ALUop := decoder.ALUop
+  io.branchType := decoder.branchType
   when(!testHarness.registerSetup.setup) {
   printf(
     "ID: instr=%x rs1=%d rs2=%d rd=%d imm=%d regWrite=%d op2=%d alu=%d\n",

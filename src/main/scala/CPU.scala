@@ -66,6 +66,10 @@ class CPU extends MultiIOModule {
     // connect ID to IF
     IFBarrier.PCIn := IF.io.PC
     IFBarrier.instructionIn := IF.io.instruction
+    IF.io.redirect := EX.io.redirect
+    IF.io.targetPC := EX.io.targetPC
+
+    
 
     ID.io.instruction := IFBarrier.instructionOut
 
@@ -77,7 +81,15 @@ class CPU extends MultiIOModule {
     IDBarrier.ALUopIn := ID.io.ALUop
     IDBarrier.rdIn := ID.io.rd
     IDBarrier.controlSignalsIn := ID.io.controlSignals
+    IDBarrier.PCIn := IFBarrier.PCOut
+    IDBarrier.op1SelectIn := ID.io.op1Select
+    IDBarrier.branchTypeIn := ID.io.branchType
 
+
+
+
+    EX.io.PC := IDBarrier.PCOut
+    EX.io.op1Select := IDBarrier.op1SelectOut
     EX.io.readData1 := IDBarrier.readData1Out
     EX.io.readData2 := IDBarrier.readData2Out
     EX.io.immediate := IDBarrier.immediateOut
@@ -85,6 +97,7 @@ class CPU extends MultiIOModule {
     EX.io.ALUop := IDBarrier.ALUopOut
     EX.io.rd := IDBarrier.rdOut
     EX.io.controlSignals := IDBarrier.controlSignalsOut
+    EX.io.branchType := IDBarrier.branchTypeOut
 
 
     MEM.io.aluResult := EX.io.aluResult
