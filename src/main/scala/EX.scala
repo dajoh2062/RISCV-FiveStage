@@ -78,6 +78,9 @@ class Execute extends Module{
 
     val ALU = Module(new ALU)
 
+
+
+
     val memMatchesRs1 =
       io.memRegWrite &&
       (io.memRd =/= 0.U) &&
@@ -101,6 +104,9 @@ class Execute extends Module{
     }.elsewhen(wbMatchesRs1) {
       forwardedRs1 := io.wbResult
     }
+
+
+
 
     val memMatchesRs2 =
       io.memRegWrite &&
@@ -127,6 +133,9 @@ class Execute extends Module{
     io.forwardedData1 := forwardedRs1
     io.forwardedData2 := forwardedRs2
 
+
+
+
     val usesRs1 =
       io.controlSignals.branch ||
       (
@@ -143,12 +152,17 @@ class Execute extends Module{
         (io.ALUop =/= ALUOps.DC)
       )
 
+
+
+
     io.loadUseHazard :=
       io.memRead &&
       (
         (usesRs1 && memMatchesRs1) ||
         (usesRs2 && memMatchesRs2)
       )
+    
+
     
     ALU.io.op1 := Mux(
       io.op1Select === Op1Select.PC,
@@ -161,6 +175,8 @@ class Execute extends Module{
       io.immediate.asUInt,
       forwardedRs2
     )
+
+
 
 
     // branching also supports forwared values
@@ -205,6 +221,7 @@ class Execute extends Module{
     )
     io.rdOut := io.rd
     io.controlSignalsOut := io.controlSignals
+
 
     // now supports forwarded values
     io.storeData := forwardedRs2
