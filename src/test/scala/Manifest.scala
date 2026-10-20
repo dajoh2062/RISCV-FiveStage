@@ -26,8 +26,8 @@ object Manifest {
   //val singleTest = "forward2.s"
   //val singleTest = "load2.s"
   val singleTest = "single.s"
-
-  val nopPadded = true
+  
+  val nopPadded = false
 
   val singleTestOptions = TestOptions(
     printIfSuccessful  = true,

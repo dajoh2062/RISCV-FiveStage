@@ -26,10 +26,13 @@ class InstructionDecode extends MultiIOModule {
       val writeData = Input(UInt(32.W))
 
 
-      // added outputs for alu
+      // added outputs for ex
       val readData1 = Output(UInt(32.W))
       val readData2 = Output(UInt(32.W))
       val rd = Output(UInt(5.W))
+      // which registers
+      val rs1 = Output(UInt(5.W))
+      val rs2 = Output(UInt(5.W))
       val immediate = Output(SInt(32.W))
 
       val controlSignals = Output(new ControlSignals)
@@ -75,9 +78,32 @@ class InstructionDecode extends MultiIOModule {
   // ID prepares the values and control signals that the execute stage will need
   decoder.instruction := io.instruction
 
-  io.readData1 := registers.io.readData1
-  io.readData2 := registers.io.readData2
+  // when WB is writing a register ID currently reads, send WB’s value directly into ID’s output.
+  val bypassRs1 =
+    io.writeEnable &&
+    (io.writeAddress =/= 0.U) &&
+    (io.writeAddress === io.instruction.registerRs1)
+
+  val bypassRs2 =
+    io.writeEnable &&
+    (io.writeAddress =/= 0.U) &&
+    (io.writeAddress === io.instruction.registerRs2)
+
+  io.readData1 := Mux(
+    bypassRs1,
+    io.writeData,
+    registers.io.readData1
+  )
+
+  io.readData2 := Mux(
+    bypassRs2,
+    io.writeData,
+    registers.io.readData2
+  )
+
   io.rd := io.instruction.registerRd
+  io.rs1 := io.instruction.registerRs1
+  io.rs2 := io.instruction.registerRs2
   io.immediate := MuxCase(
     io.instruction.immediateIType,
     Seq(

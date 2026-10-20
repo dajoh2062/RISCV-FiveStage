@@ -27,6 +27,10 @@ class InstructionFetch extends MultiIOModule {
       // added to include instruction in output
       val instruction = Output(new Instruction)
 
+      // receiving PC of instruction currently frozen in ID
+      val stall = Input(Bool())
+      val stallPC = Input(UInt(32.W))
+
       val redirect = Input(Bool())
       val targetPC = Input(UInt(32.W))
     })
@@ -47,12 +51,22 @@ class InstructionFetch extends MultiIOModule {
     * 
     * You should expand on or rewrite the code below.
     */
-  io.PC := PC
-  IMEM.io.instructionAddress := PC
+    val fetchAddress = Mux(
+      io.redirect,
+      io.targetPC,
+      Mux(io.stall, io.stallPC, PC)
+    )
 
-  // PC := PC + 4.U
-  PC := Mux(io.redirect, io.targetPC, PC + 4.U)
+    // The PC sent to IFBarrier must match the requested instruction.
+    io.PC := fetchAddress
+    IMEM.io.instructionAddress := fetchAddress
 
+    when(io.redirect) {
+      // We are already requesting targetPC during this cycle.
+      PC := io.targetPC + 4.U
+    }.elsewhen(!io.stall) {
+      PC := PC + 4.U
+    }
 
   val instruction = Wire(new Instruction)
   instruction := IMEM.io.instruction.asTypeOf(new Instruction)

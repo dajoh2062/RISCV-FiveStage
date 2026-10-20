@@ -6,13 +6,17 @@ class IFBarrier extends Module {
         val PCIn = Input(UInt(32.W))
         val PCOut = Output(UInt(32.W))
 
+        val stall = Input(Bool())
+
         val instructionIn = Input(new Instruction)
         val instructionOut = Output(new Instruction)
   })
 
     val PCRegister = RegInit(0.U(32.W))
 
-    PCRegister := io.PCIn
+    when(!io.stall) {
+        PCRegister := io.PCIn
+    }
     io.PCOut := PCRegister
 
     io.instructionOut := io.instructionIn

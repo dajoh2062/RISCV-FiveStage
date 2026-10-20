@@ -46,36 +46,127 @@ class Execute extends Module{
         val op2Select = Input(UInt(1.W))
         val ALUop = Input(UInt(4.W))
 
+        val rs1 = Input(UInt(5.W))
+        val rs2 = Input(UInt(5.W))
         val rd = Input(UInt(5.W))
         val controlSignals = Input(new ControlSignals)
         val branchType = Input(UInt(3.W))
 
+        //instruction currently in MEM.
+        val memRd = Input(UInt(5.W))
+        val memRegWrite = Input(Bool())
+        val memRead = Input(Bool())
+        val memResult = Input(UInt(32.W))
 
-        val aluResult = Output(UInt(32.W))
+        //instruction currently in WB.
+        val wbRd = Input(UInt(5.W))
+        val wbRegWrite = Input(Bool())
+        val wbResult = Input(UInt(32.W))
+
+        val aluResult = Output(UInt(32.W))  
         val rdOut = Output(UInt(5.W))
         val controlSignalsOut = Output(new ControlSignals)
         val storeData = Output(UInt(32.W))
         val redirect = Output(Bool())
         val targetPC = Output(UInt(32.W))
+        val loadUseHazard = Output(Bool())
+
+        // forwarded data 
+        val forwardedData1 = Output(UInt(32.W))
+        val forwardedData2 = Output(UInt(32.W))
     })
 
     val ALU = Module(new ALU)
 
+    val memMatchesRs1 =
+      io.memRegWrite &&
+      (io.memRd =/= 0.U) &&
+      (io.memRd === io.rs1)
+
+    val wbMatchesRs1 =
+      io.wbRegWrite &&
+      (io.wbRd =/= 0.U) &&
+      (io.wbRd === io.rs1)
+
+    val forwardedRs1 = Wire(UInt(32.W))
+
+    // Default: use the value read from the register file.
+    forwardedRs1 := io.readData1
+
+    when(memMatchesRs1) {
+      //prevents forwarding a lw-instrunctions address as its result
+      when(!io.memRead) {
+        forwardedRs1 := io.memResult
+      }
+    }.elsewhen(wbMatchesRs1) {
+      forwardedRs1 := io.wbResult
+    }
+
+    val memMatchesRs2 =
+      io.memRegWrite &&
+      (io.memRd =/= 0.U) &&
+      (io.memRd === io.rs2)
+
+    val wbMatchesRs2 =
+      io.wbRegWrite &&
+      (io.wbRd =/= 0.U) &&
+      (io.wbRd === io.rs2)
+
+    val forwardedRs2 = Wire(UInt(32.W))
+
+    forwardedRs2 := io.readData2
+
+    when(memMatchesRs2) {
+      when(!io.memRead) {
+        forwardedRs2 := io.memResult
+      }
+    }.elsewhen(wbMatchesRs2) {
+      forwardedRs2 := io.wbResult
+    }
+
+    io.forwardedData1 := forwardedRs1
+    io.forwardedData2 := forwardedRs2
+
+    val usesRs1 =
+      io.controlSignals.branch ||
+      (
+        (io.op1Select === Op1Select.rs1) &&
+        (io.ALUop =/= ALUOps.COPY_B) &&
+        (io.ALUop =/= ALUOps.DC)
+      )
+
+    val usesRs2 =
+      io.controlSignals.branch ||
+      io.controlSignals.memWrite ||
+      (
+        (io.op2Select === Op2Select.rs2) &&
+        (io.ALUop =/= ALUOps.DC)
+      )
+
+    io.loadUseHazard :=
+      io.memRead &&
+      (
+        (usesRs1 && memMatchesRs1) ||
+        (usesRs2 && memMatchesRs2)
+      )
+    
     ALU.io.op1 := Mux(
       io.op1Select === Op1Select.PC,
       io.PC,
-      io.readData1
+      forwardedRs1
     )
 
     ALU.io.op2 := Mux(
-        io.op2Select === Op2Select.imm,
-        io.immediate.asUInt,
-        io.readData2
+      io.op2Select === Op2Select.imm,
+      io.immediate.asUInt,
+      forwardedRs2
     )
 
-    val equal = io.readData1 === io.readData2
-    val less = io.readData1.asSInt < io.readData2.asSInt
-    val lessU = io.readData1 < io.readData2
+
+    // branching also supports forwared values
+    val equal = forwardedRs1 === forwardedRs2
+    val less = forwardedRs1.asSInt < forwardedRs2.asSInt
+    val lessU = forwardedRs1 < forwardedRs2
 
     // Greater-than-or-equal includes equality and is the inverse of less-than.
     val branchCondition = MuxLookup(io.branchType, false.B, Array(
@@ -87,7 +178,12 @@ class Execute extends Module{
       branchType.gteu -> !lessU
     ))
 
-    io.redirect := io.controlSignals.jump || (io.controlSignals.branch && branchCondition)
+    io.redirect :=
+      !io.loadUseHazard &&
+      (
+        io.controlSignals.jump ||
+        (io.controlSignals.branch && branchCondition)
+      )
 
     // JAL uses PC as its base; JALR uses rs1 and clears target bit 0.
     val isJalr = io.controlSignals.jump &&
@@ -109,7 +205,9 @@ class Execute extends Module{
     )
     io.rdOut := io.rd
     io.controlSignalsOut := io.controlSignals
-    io.storeData := io.readData2
+
+    // now supports forwarded values
+    io.storeData := forwardedRs2
 
 
     printf(
