@@ -23,16 +23,14 @@ class InstructionFetch extends MultiIOModule {
     */
   val io = IO(
     new Bundle {
-      val PC = Output(UInt())
-      // added to include instruction in output
-      val instruction = Output(new Instruction)
+      val PC = Output(UInt())                   // To IFBarrier.PCIn: address requested from instruction memory.
+      val instruction = Output(new Instruction) // To IFBarrier.instructionIn, then ID.io.instruction.
 
-      // receiving PC of instruction currently frozen in ID
-      val stall = Input(Bool())
-      val stallPC = Input(UInt(32.W))
+      val stall = Input(Bool())                 // From EX.io.loadUseHazard via fetchStall in CPU.
+      val stallPC = Input(UInt(32.W))           // From IFBarrier.PCOut: PC of the instruction held in ID.
 
-      val redirect = Input(Bool())
-      val targetPC = Input(UInt(32.W))
+      val redirect = Input(Bool())              // From EX.io.redirect: taken branch or jump.
+      val targetPC = Input(UInt(32.W))          // From EX.io.targetPC: branch or jump destination.
     })
 
   val IMEM = Module(new IMEM)
