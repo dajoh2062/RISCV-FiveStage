@@ -53,29 +53,15 @@ class CPU extends MultiIOModule {
     */
   testHarness.regUpdates := ID.testHarness.testUpdates
   testHarness.memUpdates := MEM.testHarness.testUpdates
-  testHarness.currentPC  := IF.testHarness.PC
+  testHarness.currentPC := IDBarrier.PCOut
 
 
   /**
     TODO: Your code here
     */
 
-    // used for stalling instructions after a branch/jump
-    val controlInID =
-      ID.io.controlSignals.branch ||
-      ID.io.controlSignals.jump
-
-    val controlInEX =
-      IDBarrier.controlSignalsOut.branch ||
-      IDBarrier.controlSignalsOut.jump
-
-    // EX can resolve the branch/jump once its operands are available.
-    val controlResolved =
-      controlInEX && !EX.io.loadUseHazard
-
-    // Wait for a load, or stop fetching ahead of a branch/jump.
-    val fetchStall =
-      (EX.io.loadUseHazard || controlInID) && !controlResolved
+    // Only data hazards stall fetch.
+    val fetchStall = EX.io.loadUseHazard
 
     IFBarrier.PCIn := IF.io.PC
     IFBarrier.instructionIn := IF.io.instruction
@@ -84,15 +70,12 @@ class CPU extends MultiIOModule {
     IF.io.stallPC := IFBarrier.PCOut
     IFBarrier.stall := fetchStall
 
-    // Resume fetching for both taken and untaken branches.
-    IF.io.redirect := controlResolved
-    IF.io.targetPC := Mux(
-      EX.io.redirect,
-      EX.io.targetPC,
-      IDBarrier.PCOut + 4.U
-    )
+    // Redirect for taken branches and jumps.
+    IF.io.redirect := EX.io.redirect
+    IF.io.targetPC := EX.io.targetPC
 
-    IDBarrier.bubble := controlInEX
+    // Discard the wrong-path instruction currently in ID.
+    IDBarrier.bubble := EX.io.redirect
       
 
     ID.io.instruction := IFBarrier.instructionOut
