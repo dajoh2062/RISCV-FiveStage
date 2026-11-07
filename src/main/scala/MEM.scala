@@ -69,10 +69,10 @@ class MemoryFetch() extends MultiIOModule {
   io.controlSignalsOut := controlSignalsRegister
 
 
-  printf(
-    "MEM: aluResult=%d rd=%d regWrite=%d\n",
-    io.aluResultOut,
-    io.rdOut,
-    io.controlSignalsOut.regWrite
-  )
+  // printf(
+  //   "MEM: aluResult=%d rd=%d regWrite=%d\n",
+  //   io.aluResultOut,
+  //   io.rdOut,
+  //   io.controlSignalsOut.regWrite
+  // )
 }

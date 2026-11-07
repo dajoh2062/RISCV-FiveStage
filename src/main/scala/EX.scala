@@ -227,14 +227,14 @@ class Execute extends Module{
     io.storeData := forwardedRs2
 
 
-    printf(
-        "EX: op1=%d op2=%d alu=%d result=%d rd=%d regWrite=%d\n",
-        ALU.io.op1,
-        ALU.io.op2,
-        io.ALUop,
-        io.aluResult,
-        io.rd,
-        io.controlSignals.regWrite
-    )
+    // printf(
+    //     "EX: op1=%d op2=%d alu=%d result=%d rd=%d regWrite=%d\n",
+    //     ALU.io.op1,
+    //     ALU.io.op2,
+    //     io.ALUop,
+    //     io.aluResult,
+    //     io.rd,
+    //     io.controlSignals.regWrite
+    // )
 }
 

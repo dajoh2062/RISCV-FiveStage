@@ -63,6 +63,59 @@ class CPU extends MultiIOModule {
     // Only data hazards stall fetch.
     val fetchStall = EX.io.loadUseHazard
 
+    val exWrites =
+      IDBarrier.controlSignalsOut.regWrite &&
+      (IDBarrier.rdOut =/= 0.U)
+
+    val memWrites =
+      EXBarrier.controlSignalsOut.regWrite &&
+      (EXBarrier.rdOut =/= 0.U)
+
+    val exMatchesRs1 = exWrites && (IDBarrier.rdOut === ID.io.rs1)
+    val exMatchesRs2 = exWrites && (IDBarrier.rdOut === ID.io.rs2)
+    val memMatchesRs1 = memWrites && (EXBarrier.rdOut === ID.io.rs1)
+    val memMatchesRs2 = memWrites && (EXBarrier.rdOut === ID.io.rs2)
+
+    val branchOperand1 = Mux(
+      exMatchesRs1,
+      EX.io.aluResult,
+      Mux(memMatchesRs1, EXBarrier.aluResultOut, ID.io.readData1)
+    )
+
+    val branchOperand2 = Mux(
+      exMatchesRs2,
+      EX.io.aluResult,
+      Mux(memMatchesRs2, EXBarrier.aluResultOut, ID.io.readData2)
+    )
+
+    val waitingForLoad =
+      (IDBarrier.controlSignalsOut.memRead &&
+        (exMatchesRs1 || exMatchesRs2)) ||
+      (EXBarrier.controlSignalsOut.memRead &&
+        ((!exMatchesRs1 && memMatchesRs1) ||
+         (!exMatchesRs2 && memMatchesRs2)))
+
+    val isEqualityBranch =
+      ID.io.controlSignals.branch &&
+      ((ID.io.branchType === branchType.beq) ||
+       (ID.io.branchType === branchType.neq))
+
+    val earlyBranchHandled =
+      isEqualityBranch &&
+      !waitingForLoad &&
+      !fetchStall &&
+      !EX.io.redirect
+
+    val operandsEqual = branchOperand1 === branchOperand2
+    val earlyBranchTaken = Mux(
+      ID.io.branchType === branchType.beq,
+      operandsEqual,
+      !operandsEqual
+    )
+
+    val earlyRedirect = earlyBranchHandled && earlyBranchTaken
+    val earlyTargetPC = IFBarrier.PCOut + ID.io.immediate.asUInt
+
     IFBarrier.PCIn := IF.io.PC
     IFBarrier.instructionIn := IF.io.instruction
 
@@ -71,8 +124,8 @@ class CPU extends MultiIOModule {
     IFBarrier.stall := fetchStall
 
     // Redirect for taken branches and jumps.
-    IF.io.redirect := EX.io.redirect
-    IF.io.targetPC := EX.io.targetPC
+    IF.io.redirect := EX.io.redirect || earlyRedirect
+    IF.io.targetPC := Mux(EX.io.redirect, EX.io.targetPC, earlyTargetPC)
 
     // Discard the wrong-path instruction currently in ID.
     IDBarrier.bubble := EX.io.redirect
@@ -94,6 +147,9 @@ class CPU extends MultiIOModule {
     IDBarrier.rs2In := ID.io.rs2
     IDBarrier.rdIn := ID.io.rd
     IDBarrier.controlSignalsIn := ID.io.controlSignals
+    when(earlyBranchHandled) {
+      IDBarrier.controlSignalsIn.branch := false.B
+    }
     IDBarrier.PCIn := IFBarrier.PCOut
     IDBarrier.op1SelectIn := ID.io.op1Select
     IDBarrier.branchTypeIn := ID.io.branchType
