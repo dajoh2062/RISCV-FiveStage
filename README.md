@@ -1,1 +1,5 @@
 # RISCV-FiveStage
+
+Milestone 5: Fast branch handling
+
+I implemented fast branch handling for BEQ and BNE by resolving them in the instruction decode (ID) stage instead of waiting until the execute (EX) stage. When the required operands are available, a taken branch redirects instruction fetch immediately, removing the previous one-cycle branch penalty. The main challenge was ensuring that the comparison uses the latest register values, which I handled by forwarding results from EX and MEM and using the existing WB bypass. Branches that depend on unavailable load results fall back to the existing EX handling and load-use stall mechanism. I also gave older EX redirects priority over ID branches and cleared the branch control signal after early resolution to prevent the same branch from redirecting again in EX. All basic and program tests passed after the change. To summarize: Fast branch handling removes the one-cycle penalty for taken BEQ/BNE instructions when their operands are available in ID, by resolving them one stage earlier than in the M4 solution.

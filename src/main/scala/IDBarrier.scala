@@ -49,6 +49,7 @@ class IDBarrier extends Module {
     val bubble = Input(Bool())
   })
 
+  // These registers hold everything EX needs for the current instruction.
   val readData1Register = RegInit(0.U(32.W))
   val readData2Register = RegInit(0.U(32.W))
   val immediateRegister = RegInit(0.S(32.W))
@@ -63,8 +64,7 @@ class IDBarrier extends Module {
   val controlSignalsRegister = RegInit(0.U.asTypeOf(new ControlSignals))
   val branchTypeRegister = RegInit(branchType.DC)
 
-
-
+  // While stalled, keep the instruction but save any operands forwarded this cycle.
   when(io.stall) {
     // The current EX instruction still needs an operand.
     readData1Register := io.forwardedData1In
@@ -75,7 +75,7 @@ class IDBarrier extends Module {
     ALUopRegister := ALUOps.DC
     rdRegister := 0.U
   }.otherwise {
-  // accept new instruction data like usual if no stall
+    // accept new instruction data like usual if no stall
     readData1Register := io.readData1In
     readData2Register := io.readData2In
     immediateRegister := io.immediateIn
@@ -90,7 +90,7 @@ class IDBarrier extends Module {
     branchTypeRegister := io.branchTypeIn
   }
 
-
+  // EX reads the saved values from the previous clock edge.
   io.readData1Out := readData1Register
   io.readData2Out := readData2Register
   io.immediateOut := immediateRegister

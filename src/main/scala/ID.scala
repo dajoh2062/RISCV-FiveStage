@@ -3,7 +3,6 @@ import chisel3._
 import chisel3.util.{ BitPat, MuxCase }
 import chisel3.experimental.MultiIOModule
 
-
 class InstructionDecode extends MultiIOModule {
 
   // Don't touch the test harness
@@ -15,7 +14,6 @@ class InstructionDecode extends MultiIOModule {
       val testUpdates   = Output(new RegisterUpdates)
     })
 
-
   val io = IO(
     new Bundle {
       //added input to id for
@@ -24,7 +22,6 @@ class InstructionDecode extends MultiIOModule {
       val writeEnable = Input(Bool())
       val writeAddress = Input(UInt(5.W))
       val writeData = Input(UInt(32.W))
-
 
       // added outputs for ex
       val readData1 = Output(UInt(32.W))
@@ -41,12 +38,12 @@ class InstructionDecode extends MultiIOModule {
       val ALUop = Output(UInt(4.W))
 
       val branchType = Output(UInt(3.W))
-      }
+    }
   )
 
+  // Read the operands and decode what the instruction needs to do.
   val registers = Module(new Registers)
   val decoder   = Module(new Decoder).io
-
 
   /**
     * Setup. You should not change this code
@@ -54,7 +51,6 @@ class InstructionDecode extends MultiIOModule {
   registers.testHarness.setup := testHarness.registerSetup
   testHarness.registerPeek    := registers.io.readData1
   testHarness.testUpdates     := registers.testHarness.testUpdates
-
 
   /**
     * TODO: Your code here.
@@ -68,13 +64,13 @@ class InstructionDecode extends MultiIOModule {
   //registers.io.writeEnable  := false.B
   //registers.io.writeAddress := 0.U
   //registers.io.writeData    := 0.U
-  // + 
+  // +
   registers.io.writeEnable := io.writeEnable
   registers.io.writeAddress := io.writeAddress
   registers.io.writeData := io.writeData
 
   //decoder.instruction := 0.U.asTypeOf(new Instruction)
-  // added 
+  // added
   // ID prepares the values and control signals that the execute stage will need
   decoder.instruction := io.instruction
 
@@ -104,6 +100,7 @@ class InstructionDecode extends MultiIOModule {
   io.rd := io.instruction.registerRd
   io.rs1 := io.instruction.registerRs1
   io.rs2 := io.instruction.registerRs2
+  // Pick the immediate layout that matches this instruction.
   io.immediate := MuxCase(
     io.instruction.immediateIType,
     Seq(
@@ -118,6 +115,7 @@ class InstructionDecode extends MultiIOModule {
     )
   )
 
+  // Send the decoded controls on to the rest of the pipeline.
   io.controlSignals := decoder.controlSignals
   io.op1Select := decoder.op1Select
   io.op2Select := decoder.op2Select
@@ -135,5 +133,5 @@ class InstructionDecode extends MultiIOModule {
   //   io.op2Select,
   //   io.ALUop
   // )
-// }
+  // }
 }

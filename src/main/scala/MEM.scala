@@ -3,9 +3,7 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.MultiIOModule
 
-
 class MemoryFetch() extends MultiIOModule {
-
 
   // Don't touch the test harness
   val testHarness = IO(
@@ -18,21 +16,19 @@ class MemoryFetch() extends MultiIOModule {
 
   val io = IO(
     new Bundle {
-    val aluResult = Input(UInt(32.W))
-    val rd = Input(UInt(5.W))
-    val controlSignals = Input(new ControlSignals)
-    val storeData = Input(UInt(32.W))
+      val aluResult = Input(UInt(32.W))
+      val rd = Input(UInt(5.W))
+      val controlSignals = Input(new ControlSignals)
+      val storeData = Input(UInt(32.W))
 
-    val aluResultOut = Output(UInt(32.W))
-    val memoryDataOut = Output(UInt(32.W))
-    val rdOut = Output(UInt(5.W))
-    val controlSignalsOut = Output(new ControlSignals)
-      
+      val aluResultOut = Output(UInt(32.W))
+      val memoryDataOut = Output(UInt(32.W))
+      val rdOut = Output(UInt(5.W))
+      val controlSignalsOut = Output(new ControlSignals)
+
     })
 
-
   val DMEM = Module(new DMEM)
-
 
   /**
     * Setup. You should not change this code
@@ -41,10 +37,10 @@ class MemoryFetch() extends MultiIOModule {
   testHarness.DMEMpeek    := DMEM.io.dataOut
   testHarness.testUpdates := DMEM.testHarness.testUpdates
 
-
   /**
     * Your code here.
     */
+  // The ALU result is the address for loads and stores.
   //DMEM.io.dataIn      := 0.U
   DMEM.io.dataAddress := io.aluResult
   //DMEM.io.writeEnable := false.B
@@ -56,6 +52,7 @@ class MemoryFetch() extends MultiIOModule {
   //io.controlSignalsOut := io.controlSignals
   io.memoryDataOut := DMEM.io.dataOut
 
+  // Delay the other results by one cycle to line up with the memory read.
   val aluResultRegister = RegInit(0.U(32.W))
   val rdRegister = RegInit(0.U(5.W))
   val controlSignalsRegister = RegInit(0.U.asTypeOf(new ControlSignals))
@@ -64,10 +61,10 @@ class MemoryFetch() extends MultiIOModule {
   rdRegister := io.rd
   controlSignalsRegister := io.controlSignals
 
+  // Pass the saved result and controls to WB.
   io.aluResultOut := aluResultRegister
   io.rdOut := rdRegister
   io.controlSignalsOut := controlSignalsRegister
-
 
   // printf(
   //   "MEM: aluResult=%d rd=%d regWrite=%d\n",
